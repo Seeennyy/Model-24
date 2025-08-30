@@ -31,13 +31,21 @@
 1. **Deploy to Vercel**:
    ```bash
    # From the client directory
+   cd client
    vercel --prod
    ```
 
 2. **Or use Vercel Dashboard**:
    - Connect your GitHub repository
    - Set root directory to `client`
+   - **Important**: Set build command to `null` or leave empty
+   - **Important**: Set output directory to `.` (current directory)
    - Deploy
+
+3. **Alternative: Direct File Upload**:
+   - Zip the `client` folder contents
+   - Upload directly to Vercel dashboard
+   - No build process needed
 
 ## What Works Now
 
@@ -66,6 +74,12 @@
 
 ## Troubleshooting
 
+### If You Get "vite: command not found" Error:
+1. **This is a build configuration issue**
+2. **Solution**: The project is configured for static deployment, not Vite build
+3. **Fix**: Set build command to `null` in Vercel dashboard
+4. **Alternative**: Use direct file upload instead of Git deployment
+
 ### If Loading Screen Gets Stuck:
 1. Check browser console for errors
 2. The app has multiple fallback mechanisms that should show the interface within 5 seconds
@@ -75,6 +89,12 @@
 1. Check if all JavaScript files loaded (console logs)
 2. Some advanced features may be limited but core functionality should work
 3. The system gracefully degrades if certain components fail
+
+### Vercel Dashboard Settings:
+- **Framework Preset**: Other
+- **Build Command**: Leave empty or set to `null`
+- **Output Directory**: `.` (current directory)
+- **Install Command**: Leave empty
 
 ## Future Enhancements
 
