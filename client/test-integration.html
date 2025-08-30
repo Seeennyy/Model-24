@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Integration Test - Hydrogen Factory</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.5);
+        }
+        
+        .btn-success { background: linear-gradient(45deg, #2ecc71, #27ae60); }
+        .btn-danger { background: linear-gradient(45deg, #e74c3c, #c0392b); }
+        .btn-warning { background: linear-gradient(45deg, #f39c12, #e67e22); }
+        
+        .status-display {
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .tab-test {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .tab-button {
+            padding: 10px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .tab-button.active {
+            background: #4a90e2;
+            box-shadow: 0 2px 10px rgba(74, 144, 226, 0.5);
+        }
+        
+        #test-log {
+            height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🧪 Integration Test Suite</h1>
+            <p>Testing all buttons, tabs, and animations for the Hydrogen Factory</p>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎮 Main Factory Controls Test</h3>
+            <div class="test-buttons">
+                <button id="test-start" onclick="testStartFactory()">🚀 Test Start Factory</button>
+                <button id="test-stop" onclick="testStopFactory()">⏹️ Test Stop Factory</button>
+                <button id="test-optimize" class="btn-success" onclick="testOptimize()">🎯 Test Optimize</button>
+                <button id="test-emergency" class="btn-danger" onclick="testEmergencyStop()">🚨 Test Emergency</button>
+            </div>
+            <div class="status-display" id="factory-status">Status: Ready for testing</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📑 Tab System Test</h3>
+            <div class="tab-test">
+                <div class="tab-button active" onclick="testTab('overview')">Overview</div>
+                <div class="tab-button" onclick="testTab('water')">Water</div>
+                <div class="tab-button" onclick="testTab('electrolysis')">Electrolysis</div>
+                <div class="tab-button" onclick="testTab('purification')">Purification</div>
+                <div class="tab-button" onclick="testTab('compression')">Compression</div>
+                <div class="tab-button" onclick="testTab('storage')">Storage</div>
+                <div class="tab-button" onclick="testTab('power')">Power</div>
+            </div>
+            <div class="status-display" id="tab-status">Active Tab: overview</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>⚙️ System Controls Test</h3>
+            <div class="test-buttons">
+                <button onclick="testSystemControl('water', 'start')">💧 Start Water</button>
+                <button onclick="testSystemControl('water', 'stop')">💧 Stop Water</button>
+                <button onclick="testSystemControl('electrolysis', 'start')">⚡ Start Electrolysis</button>
+                <button onclick="testSystemControl('electrolysis', 'stop')">⚡ Stop Electrolysis</button>
+                <button onclick="testSystemControl('purification', 'start')">🔬 Start Purification</button>
+                <button onclick="testSystemControl('storage', 'start')">🛢️ Start Storage</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎛️ Parameter Controls Test</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div>
+                    <label>Voltage: <span id="voltage-test-display">1.8V</span></label>
+                    <input type="range" id="voltage-test" min="1.2" max="2.5" step="0.01" value="1.8" style="width: 100%;" oninput="testParameter('voltage', this.value, 'V', 2)">
+                </div>
+                <div>
+                    <label>Current Density: <span id="current-density-test-display">1.0 A/cm²</span></label>
+                    <input type="range" id="current-density-test" min="0.1" max="2.0" step="0.01" value="1.0" style="width: 100%;" oninput="testParameter('current-density', this.value, ' A/cm²', 2)">
+                </div>
+                <div>
+                    <label>Temperature: <span id="temperature-test-display">70°C</span></label>
+                    <input type="range" id="temperature-test" min="20" max="80" step="1" value="70" style="width: 100%;" oninput="testParameter('temperature', this.value, '°C', 0)">
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>⌨️ Keyboard Shortcuts Test</h3>
+            <p>Press these keys to test:</p>
+            <ul>
+                <li><strong>Spacebar</strong>: Start/Stop Factory</li>
+                <li><strong>O</strong>: Optimize</li>
+                <li><strong>E</strong>: Emergency Stop</li>
+                <li><strong>1-7</strong>: Switch Tabs</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Test Log</h3>
+            <div id="test-log"></div>
+            <button onclick="clearLog()" class="btn-warning">Clear Log</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔗 Integration Status</h3>
+            <div id="integration-status">
+                <div>UI Manager: <span id="ui-status">❌ Not Loaded</span></div>
+                <div>Animation System: <span id="animation-status">❌ Not Loaded</span></div>
+                <div>Tab System: <span id="tab-system-status">❌ Not Working</span></div>
+                <div>Controls: <span id="controls-status">❌ Not Working</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test Functions
+        let testLog = [];
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            testLog.push(logMessage);
+            
+            const logElement = document.getElementById('test-log');
+            logElement.innerHTML = testLog.slice(-20).join('<br>');
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            console.log(logMessage);
+        }
+        
+        function clearLog() {
+            testLog = [];
+            document.getElementById('test-log').innerHTML = '';
+        }
+        
+        function testStartFactory() {
+            log('🚀 Testing Start Factory...');
+            if (window.workingUIManager) {
+                window.workingUIManager.startFactory();
+                document.getElementById('factory-status').textContent = 'Status: Factory Started';
+                log('✅ Start Factory - SUCCESS');
+            } else {
+                log('❌ Start Factory - FAILED (UI Manager not found)');
+            }
+        }
+        
+        function testStopFactory() {
+            log('⏹️ Testing Stop Factory...');
+            if (window.workingUIManager) {
+                window.workingUIManager.stopFactory();
+                document.getElementById('factory-status').textContent = 'Status: Factory Stopped';
+                log('✅ Stop Factory - SUCCESS');
+            } else {
+                log('❌ Stop Factory - FAILED (UI Manager not found)');
+            }
+        }
+        
+        function testOptimize() {
+            log('🎯 Testing Optimize...');
+            if (window.workingUIManager) {
+                window.workingUIManager.optimizeFactory();
+                log('✅ Optimize - SUCCESS');
+            } else {
+                log('❌ Optimize - FAILED (UI Manager not found)');
+            }
+        }
+        
+        function testEmergencyStop() {
+            log('🚨 Testing Emergency Stop...');
+            if (window.workingUIManager) {
+                window.workingUIManager.emergencyStop();
+                document.getElementById('factory-status').textContent = 'Status: EMERGENCY STOP';
+                log('✅ Emergency Stop - SUCCESS');
+            } else {
+                log('❌ Emergency Stop - FAILED (UI Manager not found)');
+            }
+        }
+        
+        function testTab(tabName) {
+            log(`📑 Testing tab switch to: ${tabName}`);
+            
+            // Update visual feedback
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            document.getElementById('tab-status').textContent = `Active Tab: ${tabName}`;
+            
+            if (window.workingUIManager) {
+                window.workingUIManager.switchTab(tabName);
+                log(`✅ Tab switch to ${tabName} - SUCCESS`);
+            } else {
+                log(`❌ Tab switch to ${tabName} - FAILED (UI Manager not found)`);
+            }
+        }
+        
+        function testSystemControl(system, action) {
+            log(`⚙️ Testing ${system} ${action}...`);
+            if (window.workingUIManager) {
+                if (action === 'start') {
+                    window.workingUIManager.startSystem(system);
+                } else {
+                    window.workingUIManager.stopSystem(system);
+                }
+                log(`✅ ${system} ${action} - SUCCESS`);
+            } else {
+                log(`❌ ${system} ${action} - FAILED (UI Manager not found)`);
+            }
+        }
+        
+        function testParameter(param, value, unit, decimals) {
+            const displayValue = parseFloat(value).toFixed(decimals);
+            document.getElementById(`${param}-test-display`).textContent = displayValue + unit;
+            log(`🎛️ Parameter ${param} changed to ${displayValue}${unit}`);
+            
+            if (window.integratedAnimation) {
+                const paramName = param.replace('-', '');
+                if (paramName === 'currentdensity') paramName = 'currentDensity';
+                window.integratedAnimation.updateParameter(paramName, parseFloat(value));
+                log(`✅ Animation parameter updated`);
+            }
+        }
+        
+        // Keyboard shortcuts test
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    log('⌨️ Spacebar pressed - Testing start/stop');
+                    testStartFactory();
+                    break;
+                case 'o':
+                case 'O':
+                    log('⌨️ O pressed - Testing optimize');
+                    testOptimize();
+                    break;
+                case 'e':
+                case 'E':
+                    log('⌨️ E pressed - Testing emergency stop');
+                    testEmergencyStop();
+                    break;
+                case '1':
+                    testTab('overview');
+                    break;
+                case '2':
+                    testTab('water');
+                    break;
+                case '3':
+                    testTab('electrolysis');
+                    break;
+                case '4':
+                    testTab('purification');
+                    break;
+                case '5':
+                    testTab('compression');
+                    break;
+                case '6':
+                    testTab('storage');
+                    break;
+                case '7':
+                    testTab('power');
+                    break;
+            }
+        });
+        
+        // Check integration status
+        function checkIntegrationStatus() {
+            // Check UI Manager
+            if (window.workingUIManager || window.WorkingUIManager) {
+                document.getElementById('ui-status').innerHTML = '✅ Loaded';
+                document.getElementById('ui-status').style.color = '#2ecc71';
+            }
+            
+            // Check Animation System
+            if (window.integratedAnimation || window.IntegratedHydrogenAnimation) {
+                document.getElementById('animation-status').innerHTML = '✅ Loaded';
+                document.getElementById('animation-status').style.color = '#2ecc71';
+            }
+            
+            // Check if tabs work
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            if (tabButtons.length > 0) {
+                document.getElementById('tab-system-status').innerHTML = '✅ Working';
+                document.getElementById('tab-system-status').style.color = '#2ecc71';
+            }
+            
+            // Check if main controls exist
+            const startBtn = document.getElementById('start-factory-btn');
+            if (startBtn) {
+                document.getElementById('controls-status').innerHTML = '✅ Working';
+                document.getElementById('controls-status').style.color = '#2ecc71';
+            }
+        }
+        
+        // Initialize test
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🧪 Integration Test Suite Loaded');
+            
+            // Check status every 2 seconds
+            setInterval(checkIntegrationStatus, 2000);
+            checkIntegrationStatus();
+            
+            log('✅ Test suite ready - Use buttons above or keyboard shortcuts');
+            log('💡 Spacebar=Start/Stop, O=Optimize, E=Emergency, 1-7=Tabs');
+        });
+    </script>
+</body>
+</html>
+

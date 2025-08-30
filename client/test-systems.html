@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 System Connection Test</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .status-card {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .status-card.connected {
+            border: 2px solid #2ecc71;
+        }
+        
+        .status-card.disconnected {
+            border: 2px solid #e74c3c;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.5);
+        }
+        
+        .btn-success { background: linear-gradient(45deg, #2ecc71, #27ae60); }
+        .btn-danger { background: linear-gradient(45deg, #e74c3c, #c0392b); }
+        
+        #log {
+            height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 System Connection Test</h1>
+        
+        <div class="test-section">
+            <h3>🔗 System Status</h3>
+            <div class="system-status">
+                <div class="status-card" id="water-status">
+                    <h4>💧 Water System</h4>
+                    <div id="water-connection">❌ Disconnected</div>
+                    <button onclick="testSystem('water')" class="btn-success">Test</button>
+                </div>
+                
+                <div class="status-card" id="electrolysis-status">
+                    <h4>⚡ Electrolysis</h4>
+                    <div id="electrolysis-connection">❌ Disconnected</div>
+                    <button onclick="testSystem('electrolysis')" class="btn-success">Test</button>
+                </div>
+                
+                <div class="status-card" id="purification-status">
+                    <h4>🔬 Purification</h4>
+                    <div id="purification-connection">❌ Disconnected</div>
+                    <button onclick="testSystem('purification')" class="btn-success">Test</button>
+                </div>
+                
+                <div class="status-card" id="production-test">
+                    <h4>🔍 Production Test</h4>
+                    <div id="production-test-status">Ready</div>
+                    <button onclick="testProductionRateMatch()" class="btn-success">Test Match</button>
+                </div>
+                
+                <div class="status-card" id="compression-status">
+                    <h4>⚡ Compression</h4>
+                    <div id="compression-connection">❌ Disconnected</div>
+                    <button onclick="testSystem('compression')" class="btn-success">Test</button>
+                </div>
+                
+                <div class="status-card" id="storage-status">
+                    <h4>🛢️ Storage</h4>
+                    <div id="storage-connection">❌ Disconnected</div>
+                    <button onclick="testSystem('storage')" class="btn-success">Test</button>
+                </div>
+                
+                <div class="status-card" id="power-status">
+                    <h4>⚡ Power</h4>
+                    <div id="power-connection">❌ Disconnected</div>
+                    <button onclick="testSystem('power')" class="btn-success">Test</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎮 System Controls</h3>
+            <button onclick="startAllSystems()" class="btn-success">🚀 Start All Systems</button>
+            <button onclick="stopAllSystems()" class="btn-danger">⏹️ Stop All Systems</button>
+            <button onclick="testConnections()" class="btn-success">🔗 Test Connections</button>
+            <button onclick="testProductionRateMatch()" class="btn-success">🔍 Test Production Match</button>
+            <button onclick="testPurificationTotals()" class="btn-success">📊 Test Totals</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Test Log</h3>
+            <div id="log"></div>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        let testLog = [];
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            testLog.push(logMessage);
+            
+            const logElement = document.getElementById('log');
+            logElement.innerHTML = testLog.slice(-20).join('<br>');
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            console.log(logMessage);
+        }
+        
+        function clearLog() {
+            testLog = [];
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        function testSystem(systemName) {
+            log(`🧪 Testing ${systemName} system...`);
+            
+            if (window.systemConnector) {
+                const system = window.systemConnector.getSystem(systemName);
+                if (system) {
+                    log(`✅ ${systemName} system found and initialized`);
+                    updateSystemStatus(systemName, 'connected');
+                } else {
+                    log(`❌ ${systemName} system not found`);
+                    updateSystemStatus(systemName, 'disconnected');
+                }
+            } else {
+                log(`❌ System connector not available`);
+            }
+        }
+        
+        function updateSystemStatus(systemName, status) {
+            const statusCard = document.getElementById(`${systemName}-status`);
+            const connectionDiv = document.getElementById(`${systemName}-connection`);
+            
+            if (statusCard && connectionDiv) {
+                statusCard.className = `status-card ${status}`;
+                connectionDiv.innerHTML = status === 'connected' ? '✅ Connected' : '❌ Disconnected';
+            }
+        }
+        
+        function startAllSystems() {
+            log('🚀 Starting all systems...');
+            
+            if (window.systemConnector) {
+                ['water', 'power', 'electrolysis', 'purification', 'compression', 'storage'].forEach(system => {
+                    window.systemConnector.startSystem(system);
+                    log(`✅ Started ${system} system`);
+                });
+            } else {
+                log('❌ System connector not available');
+            }
+        }
+        
+        function stopAllSystems() {
+            log('⏹️ Stopping all systems...');
+            
+            if (window.systemConnector) {
+                ['water', 'power', 'electrolysis', 'purification', 'compression', 'storage'].forEach(system => {
+                    window.systemConnector.stopSystem(system);
+                    log(`✅ Stopped ${system} system`);
+                });
+            } else {
+                log('❌ System connector not available');
+            }
+        }
+        
+        function testConnections() {
+            log('🔗 Testing system connections...');
+            
+            if (window.systemConnector) {
+                const systems = window.systemConnector.getAllSystems();
+                log(`Found ${Object.keys(systems).length} systems`);
+                
+                Object.entries(systems).forEach(([name, system]) => {
+                    if (system && system.isInitialized) {
+                        log(`✅ ${name} system initialized`);
+                        updateSystemStatus(name, 'connected');
+                    } else {
+                        log(`❌ ${name} system not initialized`);
+                        updateSystemStatus(name, 'disconnected');
+                    }
+                });
+            } else {
+                log('❌ System connector not available');
+            }
+        }
+        
+        function testProductionRateMatch() {
+            log('🔍 Testing production rate match between electrolysis and purification...');
+            
+            if (window.systemConnector) {
+                const electrolysisSystem = window.systemConnector.getSystem('electrolysis');
+                const purificationSystem = window.systemConnector.getSystem('purification');
+                
+                if (electrolysisSystem && purificationSystem) {
+                    const electrolysisRate = electrolysisSystem.getProductionRate();
+                    const purificationInputRate = purificationSystem.getInputRate();
+                    
+                    log(`🔋 Electrolysis Production Rate: ${electrolysisRate.toFixed(1)} Nm³/hr`);
+                    log(`🧪 Purification Input Rate: ${purificationInputRate.toFixed(1)} Nm³/hr`);
+                    
+                    if (Math.abs(electrolysisRate - purificationInputRate) < 0.1) {
+                        log('✅ Production rates match!');
+                    } else {
+                        log('❌ Production rates do not match!');
+                        log(`Difference: ${Math.abs(electrolysisRate - purificationInputRate).toFixed(2)} Nm³/hr`);
+                    }
+                } else {
+                    log('❌ Systems not available');
+                }
+            } else {
+                log('❌ System connector not available');
+            }
+        }
+        
+        function testPurificationTotals() {
+            log('📊 Testing purification totals calculation...');
+            
+            if (window.systemConnector) {
+                const purificationSystem = window.systemConnector.getSystem('purification');
+                
+                if (purificationSystem) {
+                    const totalH2 = purificationSystem.getTotalHydrogenProcessed();
+                    const totalWater = purificationSystem.getTotalWaterRemoved();
+                    const totalEnergy = purificationSystem.getTotalEnergyConsumed();
+                    const operationalHours = purificationSystem.getOperationalHours();
+                    
+                    log(`🧪 Total H₂ Processed: ${totalH2.toFixed(2)} Nm³`);
+                    log(`🧪 Total Water Removed: ${totalWater.toFixed(2)} L`);
+                    log(`🧪 Total Energy Consumed: ${totalEnergy.toFixed(2)} kWh`);
+                    log(`🧪 Operational Hours: ${operationalHours.toFixed(2)} hrs`);
+                    
+                    if (totalH2 > 0 || totalWater > 0 || totalEnergy > 0) {
+                        log('✅ Totals are being calculated!');
+                    } else {
+                        log('⚠️ Totals are zero - may need more time or input');
+                    }
+                } else {
+                    log('❌ Purification system not available');
+                }
+            } else {
+                log('❌ System connector not available');
+            }
+        }
+        
+        // Check system status every 2 seconds
+        setInterval(() => {
+            if (window.systemConnector && window.systemConnector.areSystemsReady()) {
+                log('🎉 All systems are ready!');
+            }
+        }, 2000);
+        
+        // Test production rate match every 5 seconds
+        setInterval(() => {
+            if (window.systemConnector && window.systemConnector.areSystemsReady()) {
+                const electrolysisSystem = window.systemConnector.getSystem('electrolysis');
+                const purificationSystem = window.systemConnector.getSystem('purification');
+                
+                if (electrolysisSystem && purificationSystem && 
+                    electrolysisSystem.getStatus() === 'running' && 
+                    purificationSystem.getStatus() === 'running') {
+                    
+                    const electrolysisRate = electrolysisSystem.getProductionRate();
+                    const purificationInputRate = purificationSystem.getInputRate();
+                    
+                    if (Math.abs(electrolysisRate - purificationInputRate) > 0.1) {
+                        log(`⚠️ Production rate mismatch detected! Electrolysis: ${electrolysisRate.toFixed(1)}, Purification Input: ${purificationInputRate.toFixed(1)}`);
+                    }
+                }
+            }
+        }, 5000);
+        
+        // Initialize test
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🧪 System Connection Test Loaded');
+            log('⏳ Waiting for systems to load...');
+            
+            // Test connections after a delay
+            setTimeout(() => {
+                testConnections();
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
+
+

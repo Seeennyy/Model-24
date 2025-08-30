@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Units Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-container { max-width: 600px; margin: 0 auto; }
+        .power-control { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        input[type="number"] { padding: 8px; font-size: 16px; width: 100px; }
+        .power-display { font-size: 24px; font-weight: bold; color: #2ecc71; margin: 10px 0; }
+        .log { background: #f4f4f4; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔋 Power Units Test</h1>
+        
+        <div class="power-control">
+            <h3>Power System Control</h3>
+            <label for="power-units">Units Running:</label>
+            <input id="power-units" type="number" min="0" max="4" step="1" value="0" />
+            <span>/ <span id="power-units-available">4</span> available</span>
+            
+            <div class="power-display">
+                Total Power: <span id="power-total-kw">0 kW</span>
+            </div>
+            
+            <div class="power-display">
+                Overview Power: <span id="power-consumption">0 kW</span>
+            </div>
+        </div>
+        
+        <div class="log" id="log">
+            <strong>Console Log:</strong><br>
+        </div>
+    </div>
+
+    <script>
+        // Mock the working UI manager functionality
+        class TestPowerManager {
+            constructor() {
+                this.setupPowerUnitsListener();
+                this.log('🚀 Test Power Manager initialized');
+            }
+            
+            setupPowerUnitsListener() {
+                const powerUnitsInput = document.getElementById('power-units');
+                if (powerUnitsInput) {
+                    powerUnitsInput.addEventListener('input', (e) => {
+                        const n = parseInt(e.target.value, 10);
+                        this.log(`🎛️ Power units input changed to: ${n}`);
+                        if (Number.isFinite(n)) {
+                            const clampedN = Math.max(0, Math.min(n, 4));
+                            if (clampedN !== n) {
+                                e.target.value = clampedN;
+                            }
+                            this.updatePowerDisplayDirect(clampedN);
+                        }
+                    });
+                    
+                    powerUnitsInput.addEventListener('change', (e) => {
+                        const n = parseInt(e.target.value, 10);
+                        this.log(`🎛️ Power units input changed (change event) to: ${n}`);
+                        if (Number.isFinite(n)) {
+                            const clampedN = Math.max(0, Math.min(n, 4));
+                            if (clampedN !== n) {
+                                e.target.value = clampedN;
+                            }
+                            this.updatePowerDisplayDirect(clampedN);
+                        }
+                    });
+                    
+                    this.log('✅ Power units event listeners attached');
+                } else {
+                    this.log('❌ Power units input field not found!');
+                }
+            }
+            
+            updatePowerDisplayDirect(units) {
+                const powerPerUnit = 300; // kW per unit
+                const totalPower = units * powerPerUnit;
+                
+                // Update power total display
+                const powerKw = document.getElementById('power-total-kw');
+                if (powerKw) {
+                    powerKw.textContent = totalPower.toFixed(0) + ' kW';
+                    this.log(`⚡ Power display updated: ${units} units × ${powerPerUnit} kW = ${totalPower} kW`);
+                } else {
+                    this.log('❌ Power display element (power-total-kw) not found');
+                }
+                
+                // Update overview power consumption
+                const overviewPowerConsumption = document.getElementById('power-consumption');
+                if (overviewPowerConsumption) {
+                    overviewPowerConsumption.textContent = totalPower.toFixed(0) + ' kW';
+                }
+                
+                // Update power units available display
+                const powerUnitsAvailable = document.getElementById('power-units-available');
+                if (powerUnitsAvailable) {
+                    powerUnitsAvailable.textContent = '4';
+                }
+            }
+            
+            log(message) {
+                console.log(message);
+                const logDiv = document.getElementById('log');
+                if (logDiv) {
+                    logDiv.innerHTML += message + '<br>';
+                    logDiv.scrollTop = logDiv.scrollHeight;
+                }
+            }
+        }
+        
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new TestPowerManager();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test 2D Animation</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #1a1a1a; font-family: Arial, sans-serif; }
+        #viewport { width: 800px; height: 600px; border: 2px solid #444; margin: 20px 0; }
+        button { margin: 5px; padding: 10px 20px; background: #0084ff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0066cc; }
+        .debug { color: white; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1 style="color: white;">2D Animation Test</h1>
+    <div class="debug">
+        <button onclick="startAnimation()">Start Animation</button>
+        <button onclick="stopAnimation()">Stop Animation</button>
+        <button onclick="testSystem('power')">Test Power System</button>
+        <button onclick="testSystem('water')">Test Water System</button>
+    </div>
+    
+    <div id="viewport"></div>
+    
+    <div class="debug">
+        <p>Status: <span id="status">Loading...</span></p>
+        <p>Canvas: <span id="canvas-info">Not created</span></p>
+    </div>
+
+    <script src="js/animation/factory-2d.js"></script>
+    <script>
+        let animation = null;
+        
+        async function initTest() {
+            try {
+                document.getElementById('status').textContent = 'Initializing...';
+                animation = new Factory2DAnimation();
+                await animation.init();
+                
+                document.getElementById('status').textContent = 'Ready';
+                document.getElementById('canvas-info').textContent = 
+                    `${animation.canvas.width}x${animation.canvas.height}`;
+                
+                console.log('Animation initialized successfully');
+            } catch (error) {
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+                console.error('Failed to initialize animation:', error);
+            }
+        }
+        
+        function startAnimation() {
+            if (animation) {
+                animation.start();
+                document.getElementById('status').textContent = 'Running';
+            }
+        }
+        
+        function stopAnimation() {
+            if (animation) {
+                animation.stop();
+                document.getElementById('status').textContent = 'Stopped';
+            }
+        }
+        
+        function testSystem(systemName) {
+            if (animation) {
+                animation.updateSystemStatus(systemName, 'running', {
+                    units: 4, power: 1200, flow: 800, production: 150, efficiency: 85
+                });
+                animation.highlightSystem(systemName);
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initTest);
+    </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "name": "hydrogen-factory-sim",
+  "version": "1.0.0",
+  "description": "Advanced Virtual Hydrogen Production Factory Simulation",
+  "main": "server/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon server/server.js",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "node server/server.js",
+    "install-all": "npm install && cd client && npm install"
+  },
+  "keywords": [
+    "hydrogen",
+    "simulation",
+    "3d",
+    "industrial",
+    "engineering",
+    "electrolysis"
+  ],
+  "author": "Hydrogen Factory Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3",
+    "redis": "^4.6.10",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "concurrently": "^8.2.0"
+  }
+}

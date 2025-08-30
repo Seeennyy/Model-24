@@ -1,0 +1,24 @@
+{
+  "name": "hydrogen-factory-client",
+  "version": "1.0.0",
+  "description": "Frontend for Hydrogen Factory Simulation",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.157.0",
+    "chart.js": "^4.4.0",
+    "socket.io-client": "^4.7.2",
+    "mathjs": "^11.11.2",
+    "ml-matrix": "^6.10.4",
+    "simple-statistics": "^7.8.3",
+    "gsap": "^3.12.2"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "@vitejs/plugin-legacy": "^5.0.0"
+  }
+}

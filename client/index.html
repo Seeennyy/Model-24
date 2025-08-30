@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏭 Hydrogen Factory Simulation</title>
+    <meta name="description" content="Advanced 3D simulation of industrial hydrogen production facility">
+    
+    <!-- CDN Dependencies -->
+    <!-- Three.js core -->
+    <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+
+    <!-- OrbitControls: try primary CDN, then fallback -->
+    <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        if (typeof THREE !== 'undefined' && typeof THREE.OrbitControls === 'undefined') {
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js';
+            s.onload = function(){ console.log('✅ OrbitControls loaded from jsDelivr'); };
+            s.onerror = function(){ console.error('❌ OrbitControls fallback failed'); };
+            document.head.appendChild(s);
+        }
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <!-- Math.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.2/math.min.js"></script>
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    
+    <!-- Verify Three.js loaded -->
+    <script>
+        if (typeof THREE === 'undefined') {
+            console.error('❌ Three.js failed to load from CDN');
+            alert('Failed to load Three.js library. Please check your internet connection.');
+        } else {
+            console.log('✅ Three.js loaded successfully:', THREE.REVISION);
+        }
+        
+        // Check if OrbitControls is available
+        if (typeof THREE.OrbitControls === 'undefined') {
+            console.error('❌ OrbitControls failed to load');
+            // Create a fallback OrbitControls
+            THREE.OrbitControls = function(camera, domElement) {
+                this.camera = camera;
+                this.domElement = domElement;
+                this.enableDamping = false;
+                this.dampingFactor = 0.05;
+                this.screenSpacePanning = false;
+                this.minDistance = 10;
+                this.maxDistance = 200;
+                this.maxPolarAngle = Math.PI / 2;
+                
+                this.update = function() {};
+                this.reset = function() {};
+                this.dispose = function() {};
+            };
+            console.log('⚠️ Using fallback OrbitControls');
+        } else {
+            console.log('✅ OrbitControls loaded successfully');
+        }
+    </script>
+    
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-logo">🏭</div>
+            <h1>Hydrogen Factory Simulation</h1>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+            <p class="loading-text">Initializing systems...</p>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="app hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="header-title">🏭 Hydrogen Factory</h1>
+                <div class="header-status">
+                    <span class="status-indicator" id="system-status">Initializing</span>
+                    <span class="status-time" id="system-time">--:--:--</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-controls">
+                    <button id="start-factory-btn" class="btn btn-primary">🚀 Start Factory</button>
+                    <button id="stop-factory-btn" class="btn btn-secondary">⏹️ Stop Factory</button>
+                    <button id="optimize-btn" class="btn btn-success">🎯 Optimize</button>
+                    <button id="emergency-stop-btn" class="btn btn-danger">🚨 Emergency Stop</button>
+                    <span id="factory-status" class="status stopped">Stopped</span>
+                    <span id="fps-display" class="fps-display">0 FPS</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- 3D Viewport -->
+            <div class="viewport-container">
+                <div id="viewport" class="viewport"></div>
+                <div class="viewport-overlay">
+                    <div class="camera-controls">
+                        <button id="reset-camera" class="btn btn-sm">Reset View</button>
+                        <button id="top-view" class="btn btn-sm">Top</button>
+                        <button id="side-view" class="btn btn-sm">Side</button>
+                        <button id="iso-view" class="btn btn-sm">Isometric</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <div class="panel-tabs">
+                    <button class="tab-btn active" data-tab="overview">Overview</button>
+                    <button class="tab-btn" data-tab="water">Water System</button>
+                    <button class="tab-btn" data-tab="electrolysis">Electrolysis</button>
+                    <button class="tab-btn" data-tab="purification">Purification</button>
+                    <button class="tab-btn" data-tab="compression">Compression</button>
+                    <button class="tab-btn" data-tab="storage">Storage</button>
+                    <button class="tab-btn" data-tab="power">Power</button>
+                    <button class="tab-btn" data-tab="maintenance">Maintenance</button>
+                </div>
+
+                <!-- Overview Tab -->
+                <div class="tab-content active" id="overview-tab">
+                    <div class="overview-grid">
+                        <div class="metric-card">
+                            <h3>Production Rate</h3>
+                            <div class="metric-value" id="production-rate">0 Nm³/hr</div>
+                            <div class="metric-target">Target: 200 Nm³/hr</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>System Efficiency</h3>
+                            <div class="metric-value" id="system-efficiency">0%</div>
+                            <div class="metric-target">Target: >75%</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Power Consumption</h3>
+                            <div class="metric-value" id="power-consumption">0 kW</div>
+                            <div class="metric-target">Max: 1,400 kW</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Storage Level</h3>
+                            <div class="metric-value" id="overview-storage-level">0%</div>
+                            <div class="metric-target">Target: 60-80%</div>
+                        </div>
+                    </div>
+                    
+                    <!-- System Status Overview -->
+                    <div class="system-status-overview">
+                        <h3>🔧 System Status Overview</h3>
+                        <div class="system-status-grid">
+                            <div class="system-status-card">
+                                <h4>💧 Water System</h4>
+                                <div class="status-item">
+                                    <span class="status-label">Status:</span>
+                                    <span class="status-value" id="overview-water-status">offline</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Water Quality:</span>
+                                    <span class="status-value" id="overview-water-quality">-- MΩ·cm</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Flow Rate:</span>
+                                    <span class="status-value" id="overview-water-flow">-- L/hr</span>
+                                </div>
+                            </div>
+                            
+                            <div class="system-status-card">
+                                <h4>⚡ Electrolysis</h4>
+                                <div class="status-item">
+                                    <span class="status-label">Status:</span>
+                                    <span class="status-value" id="overview-electrolysis-status">offline</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">H₂ Production:</span>
+                                    <span class="status-value" id="overview-electrolysis-production">-- Nm³/hr</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Efficiency:</span>
+                                    <span class="status-value" id="overview-electrolysis-efficiency">-- %</span>
+                                </div>
+                            </div>
+                            
+                            <div class="system-status-card">
+                                <h4>🔬 Purification</h4>
+                                <div class="status-item">
+                                    <span class="status-label">Status:</span>
+                                    <span class="status-value" id="overview-purification-status">offline</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">H₂ Output:</span>
+                                    <span class="status-value" id="overview-purification-output">-- Nm³/hr</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Efficiency:</span>
+                                    <span class="status-value" id="overview-purification-efficiency">-- %</span>
+                                </div>
+                            </div>
+                            
+                            <div class="system-status-card">
+                                <h4>⚡ Compression</h4>
+                                <div class="status-item">
+                                    <span class="status-label">Status:</span>
+                                    <span class="status-value" id="overview-compression-status">offline</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Output Pressure:</span>
+                                    <span class="status-value" id="overview-compression-pressure">-- bar</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Efficiency:</span>
+                                    <span class="status-value" id="overview-compression-efficiency">-- %</span>
+                                </div>
+                            </div>
+                            
+                            <div class="system-status-card">
+                                <h4>🛢️ Storage</h4>
+                                <div class="status-item">
+                                    <span class="status-label">Status:</span>
+                                    <span class="status-value" id="overview-storage-status">offline</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Fill Level:</span>
+                                    <span class="status-value" id="overview-storage-fill">-- %</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Active Tanks:</span>
+                                    <span class="status-value" id="overview-storage-tanks">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+
+                </div>
+
+                <!-- Water System Tab -->
+                <div class="tab-content" id="water-tab">
+                    <div class="system-status">
+                        <h3>Water Treatment System</h3>
+                        <div class="status-item">
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="waterStatus">offline</span>
+                        </div>
+                        
+                        <!-- Power Requirements Display -->
+                        <div class="status-item power-requirement">
+                            <span class="status-label">Power Units Required:</span>
+                            <span class="status-value" id="water-power-units">0 units required</span>
+                        </div>
+                        
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <span class="status-label">Raw Water TDS:</span>
+                                <span class="status-value" id="raw-water-tds">-- ppm</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Process Water TDS:</span>
+                                <span class="status-value" id="process-water-tds">-- ppm</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Ultra-Pure Resistivity:</span>
+                                <span class="status-value" id="water-resistivity">-- MΩ·cm</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Flow Rate:</span>
+                                <span class="status-value" id="water-flow-rate">-- L/hr</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Water Treatment Control -->
+                        <div class="treatment-control">
+                            <h4>Water Treatment Level</h4>
+                            <div class="slider-container enhanced-slider">
+                                <div class="slider-header">
+                                    <span class="slider-title">Treatment Level</span>
+                                    <span class="slider-value" id="water-treatment-display">50%</span>
+                                </div>
+                                <input type="range" id="water-treatment-level" min="0" max="1" step="0.01" value="0.5" class="treatment-slider enhanced-range">
+                                <div class="slider-labels">
+                                    <span class="label-min">Basic (0%)</span>
+                                    <span class="label-optimal">Optimal (50%)</span>
+                                    <span class="label-max">Maximum (100%)</span>
+                                </div>
+                                <div class="slider-track">
+                                    <div class="slider-fill" id="slider-fill"></div>
+                                </div>
+                            </div>
+                            <div class="treatment-info enhanced-info">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Water Quality:</span>
+                                        <span class="info-value" id="water-quality-display">Good</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Flow Impact:</span>
+                                        <span class="info-value" id="flow-impact">-15%</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Power Units:</span>
+                                        <span class="info-value" id="water-power-units">0 units required</span>
+                                    </div>
+                                </div>
+                                <div class="treatment-description">
+                                    <p><strong>Treatment Effect:</strong> Higher treatment = Better water quality but lower flow rate</p>
+                                    <p><strong>Quality Impact:</strong> <span id="quality-impact">+25%</span> improvement in water purity</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-controls">
+                            <button id="water-start" class="btn btn-primary">Start Water System</button>
+                            <button id="water-stop" class="btn btn-danger">Stop Water System</button>
+                            <button id="water-maintenance" class="btn btn-warning">Maintenance Mode</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Electrolysis Tab -->
+                <div class="tab-content" id="electrolysis-tab">
+                    <div class="system-status">
+                        <h3>Electrolysis Stack</h3>
+                        <div class="status-item">
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="electrolysisStatus">offline</span>
+                        </div>
+                        
+                        <!-- Input Parameters Section - Prominently Displayed -->
+                        <div class="input-parameters-section">
+                            <h4>🔌 Input Parameters from Dependencies</h4>
+                            <div class="input-parameters-grid">
+                                <div class="input-parameter-card">
+                                    <div class="parameter-header">
+                                        <span class="parameter-icon">⚡</span>
+                                        <span class="parameter-title">Power System</span>
+                                    </div>
+                                    <div class="parameter-content">
+                                        <div class="parameter-item">
+                                            <span class="parameter-label">Units Running:</span>
+                                            <span class="parameter-value" id="electrolysis-input-power-units">--</span>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="parameter-label">Total Capacity:</span>
+                                            <span class="parameter-value" id="electrolysis-input-power-capacity">-- kW</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="input-parameter-card">
+                                    <div class="parameter-header">
+                                        <span class="parameter-icon">💧</span>
+                                        <span class="parameter-title">Water System</span>
+                                    </div>
+                                    <div class="parameter-content">
+                                        <div class="parameter-item">
+                                            <span class="parameter-label">Flow Rate:</span>
+                                            <span class="parameter-value" id="electrolysis-input-water-flow">-- L/hr</span>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="parameter-label">Ultra-Pure Resistivity:</span>
+                                            <span class="parameter-value" id="electrolysis-input-water-resistivity">-- MΩ·cm</span>
+                                        </div>
+                                        <div class="parameter-item">
+                                            <span class="parameter-label">Process Water TDS:</span>
+                                            <span class="parameter-value" id="electrolysis-input-water-tds">-- ppm</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Dependency Status -->
+                            <div class="dependency-status">
+                                <h5>🔗 System Dependencies</h5>
+                                <div class="dependency-grid">
+                                    <div class="dependency-item">
+                                        <span class="dependency-label">Power System:</span>
+                                        <span class="dependency-status" id="electrolysis-power-dependency">❌ Not Connected</span>
+                                    </div>
+                                    <div class="dependency-item">
+                                        <span class="dependency-label">Water System:</span>
+                                        <span class="dependency-status" id="electrolysis-water-dependency">❌ Not Connected</span>
+                                    </div>
+                                    <div class="dependency-item">
+                                        <span class="dependency-label">Water Quality:</span>
+                                        <span class="dependency-status" id="electrolysis-water-quality-dependency">❌ Insufficient</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Electrolysis System - Simple Input Guide -->
+                        <div class="electrolysis-input-guide">
+                            <h4>🔧 Electrolysis System - Simple Input Guide</h4>
+                            
+                            <!-- What You Have Section -->
+                            <div class="input-section">
+                                <h5>What You Have</h5>
+                                <div class="input-grid">
+                                    <div class="input-item">
+                                        <span class="input-label">Power capacity:</span>
+                                        <span class="input-value" id="available-power-capacity">-- kW</span>
+                                    </div>
+                                    <div class="input-item">
+                                        <span class="input-label">Water flow rate:</span>
+                                        <span class="input-value" id="available-water-flow">-- L/hr</span>
+                                    </div>
+                                    <div class="input-item">
+                                        <span class="input-label">Ultra pure resistivity:</span>
+                                        <span class="input-value" id="available-resistivity">-- MΩ·cm</span>
+                                    </div>
+                                    <div class="input-item">
+                                        <span class="input-label">Process water TDS:</span>
+                                        <span class="input-value" id="available-tds">-- ppm</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- What You Need to Add Section -->
+                            <div class="input-section">
+                                <h5>What You Need to Add</h5>
+                                
+                                <!-- 1. Electrolyzer Type -->
+                                <div class="control-group">
+                                    <h6>1. Electrolyzer Type</h6>
+                                    <div class="radio-group">
+                                        <label class="radio-option">
+                                            <input type="radio" name="electrolyzer-type" value="A" checked>
+                                            <span class="radio-label">Type A: Small cells (0.1 m² each) - Lower production</span>
+                                        </label>
+                                        <label class="radio-option">
+                                            <input type="radio" name="electrolyzer-type" value="B">
+                                            <span class="radio-label">Type B: Medium cells (0.25 m² each) - Standard production</span>
+                                        </label>
+                                        <label class="radio-option">
+                                            <input type="radio" name="electrolyzer-type" value="C">
+                                            <span class="radio-label">Type C: Large cells (0.5 m² each) - Higher production</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- 2. Number of Cells -->
+                                <div class="control-group">
+                                    <h6>2. Number of Cells</h6>
+                                    <div class="slider-control">
+                                        <label for="cell-count">Number of Cells: <span id="cell-count-display">350</span></label>
+                                        <input type="range" id="cell-count" min="200" max="500" step="10" value="350" class="control-slider">
+                                        <div class="slider-labels">
+                                            <span>200 cells</span>
+                                            <span>350 cells (Typical)</span>
+                                            <span>500 cells</span>
+                                        </div>
+                                        <p class="control-hint">More cells = higher voltage, same current</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- 3. Electrode Material -->
+                                <div class="control-group">
+                                    <h6>3. Electrode Material</h6>
+                                    <div class="radio-group">
+                                        <label class="radio-option">
+                                            <input type="radio" name="electrode-material" value="nickel" checked>
+                                            <span class="radio-label">Nickel: 75% efficiency, cheaper</span>
+                                        </label>
+                                        <label class="radio-option">
+                                            <input type="radio" name="electrode-material" value="mixed">
+                                            <span class="radio-label">Mixed metal: 80% efficiency, balanced</span>
+                                        </label>
+                                        <label class="radio-option">
+                                            <input type="radio" name="electrode-material" value="platinum">
+                                            <span class="radio-label">Platinum: 85% efficiency, expensive</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- 4. Operating Settings -->
+                                <div class="control-group">
+                                    <h6>4. Operating Settings</h6>
+                                    <div class="settings-grid">
+                                        <div class="slider-control">
+                                            <label for="power-level">Power level: <span id="power-level-display">80%</span></label>
+                                            <input type="range" id="power-level" min="0" max="100" step="5" value="80" class="control-slider">
+                                            <div class="slider-labels">
+                                                <span>0%</span>
+                                                <span>80%</span>
+                                                <span>100%</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slider-control">
+                                            <label for="target-temp">Target temperature: <span id="target-temp-display">70°C</span></label>
+                                            <input type="range" id="target-temp" min="60" max="80" step="1" value="70" class="control-slider">
+                                            <div class="slider-labels">
+                                                <span>60°C</span>
+                                                <span>70°C</span>
+                                                <span>80°C</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slider-control">
+                                            <label for="target-pressure">Target pressure: <span id="target-pressure-display">30 bar</span></label>
+                                            <input type="range" id="target-pressure" min="20" max="40" step="1" value="30" class="control-slider">
+                                            <div class="slider-labels">
+                                                <span>20 bar</span>
+                                                <span>30 bar</span>
+                                                <span>40 bar</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Calculation Results -->
+                            <div class="calculation-results">
+                                <h5>📊 Calculation Results</h5>
+                                <div class="calculation-box">
+                                    <div class="calculation-metric">
+                                        <div class="metric-header">
+                                            <span class="metric-title">Water Quality Factor</span>
+                                            <span class="metric-value" id="water-quality-factor">--</span>
+                                        </div>
+                                        <div class="metric-equation">
+                                            <span class="equation-label">Equation:</span>
+                                            <span class="equation">min(1.0, Resistivity/15.0) × (1.0 - TDS/100.0)</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="calculation-metric">
+                                        <div class="metric-header">
+                                            <span class="metric-title">Power Limit</span>
+                                            <span class="metric-value" id="power-limit">-- Nm³/hr</span>
+                                        </div>
+                                        <div class="metric-equation">
+                                            <span class="equation-label">Equation:</span>
+                                            <span class="equation">(Power Capacity × Power Level) ÷ 3.54 kWh/Nm³</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="calculation-metric">
+                                        <div class="metric-header">
+                                            <span class="metric-title">Water Limit</span>
+                                            <span class="metric-value" id="water-limit">-- Nm³/hr</span>
+                                        </div>
+                                        <div class="metric-equation">
+                                            <span class="equation-label">Equation:</span>
+                                            <span class="equation">Water Flow Rate ÷ 9 L/Nm³</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="calculation-metric">
+                                        <div class="metric-header">
+                                            <span class="metric-title">Cell Limit</span>
+                                            <span class="metric-value" id="cell-limit">-- Nm³/hr</span>
+                                        </div>
+                                        <div class="metric-equation">
+                                            <span class="equation-label">Equation:</span>
+                                            <span class="equation">Cells × Area × Efficiency × 2.5 Nm³/hr/m²</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="calculation-metric highlight">
+                                        <div class="metric-header">
+                                            <span class="metric-title">Final Production</span>
+                                            <span class="metric-value" id="final-production">-- Nm³/hr</span>
+                                        </div>
+                                        <div class="metric-equation">
+                                            <span class="equation-label">Equation:</span>
+                                            <span class="equation">min(Power Limit, Water Limit, Cell Limit)</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="calculation-metric highlight">
+                                        <div class="metric-header">
+                                            <span class="metric-title">Overall Efficiency</span>
+                                            <span class="metric-value" id="overall-efficiency-calc">-- %</span>
+                                        </div>
+                                        <div class="metric-equation">
+                                            <span class="equation-label">Equation:</span>
+                                            <span class="equation">Electrode Efficiency × Water Quality × Temp Factor × Pressure Factor</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+
+                        
+
+                        
+                        <!-- Performance Analysis -->
+                        <div class="performance-analysis">
+                            <h4>Performance Analysis</h4>
+                            <div class="performance-grid">
+                                <div class="performance-item">
+                                    <span class="performance-label">Overall Efficiency:</span>
+                                    <span class="performance-value" id="overall-efficiency">-- %</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Thermal Efficiency:</span>
+                                    <span class="performance-value" id="thermal-efficiency">-- %</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Electrical Efficiency:</span>
+                                    <span class="performance-value" id="electrical-efficiency">-- %</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Performance Score:</span>
+                                    <span class="performance-value" id="performance-score">--</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Cumulative Metrics -->
+                            <div class="cumulative-metrics">
+                                <div class="metric-item">
+                                    <span class="metric-label">Total H₂ Produced:</span>
+                                    <span class="metric-value" id="total-hydrogen-produced">-- Nm³</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Total Energy Consumed:</span>
+                                    <span class="metric-value" id="total-energy-consumed">-- kWh</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-controls">
+                            <button id="electrolysis-start" class="btn btn-primary">Start Stack</button>
+                            <button id="electrolysis-stop" class="btn btn-danger">Stop Stack</button>
+                            <button id="electrolysis-ramp" class="btn btn-secondary">Ramp Up</button>
+                            <button id="test-electrolysis-metrics" class="btn btn-warning">Test Metrics</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Purification Tab -->
+                <div class="tab-content" id="purification-tab">
+                    <div class="system-status">
+                        <h3>Simple Purification System</h3>
+                        <div class="status-item">
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="purificationStatus">offline</span>
+                        </div>
+                        
+                        <!-- Simple Input from Electrolysis -->
+                        <div class="input-section">
+                            <h4>🔌 Input from Electrolysis System</h4>
+                            <div class="input-grid">
+                                <div class="input-item">
+                                    <span class="input-label">H₂ Production Rate:</span>
+                                    <span class="input-value" id="purification-input-hydrogen-rate">-- Nm³/hr</span>
+                                </div>
+                                <div class="input-item">
+                                    <span class="input-label">Electrolysis Efficiency:</span>
+                                    <span class="input-value" id="purification-input-electrolysis-efficiency">-- %</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Simple Output -->
+                        <div class="output-section">
+                            <h4>⚙️ Purification Output</h4>
+                            <div class="output-grid">
+                                <div class="output-item">
+                                    <span class="output-label">Output H₂ Rate:</span>
+                                    <span class="output-value" id="purification-output-rate">-- Nm³/hr</span>
+                                </div>
+                                <div class="output-item">
+                                    <span class="output-label">Purification Efficiency:</span>
+                                    <span class="output-value" id="purification-efficiency">-- %</span>
+                                </div>
+                                <div class="output-item">
+                                    <span class="output-label">Water Removal:</span>
+                                    <span class="output-value" id="purification-water-removal">-- L/hr</span>
+                                </div>
+                                <div class="output-item">
+                                    <span class="output-label">Power Consumption:</span>
+                                    <span class="output-value" id="purification-power-consumption">-- kW</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Simple Control -->
+                        <div class="control-section">
+                            <h4>🎛️ Purification Level</h4>
+                            <div class="slider-control">
+                                <label for="purification-level">Level: <span id="purification-level-display">95%</span></label>
+                                <input type="range" id="purification-level" min="0" max="1" step="0.01" value="0.95" class="control-slider">
+                                <div class="slider-labels">
+                                    <span>Basic (99.0%)</span>
+                                    <span>Standard (99.5%)</span>
+                                    <span>Maximum (99.9%)</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Simple Totals -->
+                        <div class="totals-section">
+                            <h4>📈 Totals</h4>
+                            <div class="totals-grid">
+                                <div class="total-item">
+                                    <span class="total-label">H₂ Processed:</span>
+                                    <span class="total-value" id="purification-total-hydrogen">-- Nm³</span>
+                                </div>
+                                <div class="total-item">
+                                    <span class="total-label">Water Removed:</span>
+                                    <span class="total-value" id="purification-total-water">-- L</span>
+                                </div>
+                                <div class="total-item">
+                                    <span class="total-label">Energy Used:</span>
+                                    <span class="total-value" id="purification-total-energy">-- kWh</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-controls">
+                            <button id="purification-start" class="btn btn-primary">Start</button>
+                            <button id="purification-stop" class="btn btn-danger">Stop</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compression Tab -->
+                <div class="tab-content" id="compression-tab">
+                    <div class="system-status">
+                        <h3>Compression System</h3>
+                        <div class="status-item">
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="compressionStatus">offline</span>
+                        </div>
+                        
+                        <!-- System Connectivity Monitoring -->
+                        <div class="connectivity-section">
+                            <h4>🔗 System Connectivity</h4>
+                            <div class="connectivity-grid">
+                                <div class="connectivity-item">
+                                    <span class="connectivity-label">Power System:</span>
+                                    <span class="connectivity-status" id="compression-power-connectivity">❌ Disconnected</span>
+                                </div>
+                                <div class="connectivity-item">
+                                    <span class="connectivity-label">Purification System:</span>
+                                    <span class="connectivity-status" id="compression-purification-connectivity">❌ Disconnected</span>
+                                </div>
+                                <div class="connectivity-item">
+                                    <span class="connectivity-label">Storage System:</span>
+                                    <span class="connectivity-status" id="compression-storage-connectivity">❌ Disconnected</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Metrics -->
+                        <div class="performance-section">
+                            <h4>📊 Performance Analysis</h4>
+                            <div class="performance-grid">
+                                <div class="performance-item">
+                                    <span class="performance-label">Performance Score:</span>
+                                    <span class="performance-value" id="compression-performance-score">--</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Overall Efficiency:</span>
+                                    <span class="performance-value" id="compression-overall-efficiency">-- %</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Thermal Efficiency:</span>
+                                    <span class="performance-value" id="compression-thermal-efficiency">-- %</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Pressure Efficiency:</span>
+                                    <span class="performance-value" id="compression-pressure-efficiency">-- %</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Mechanical Efficiency:</span>
+                                    <span class="performance-value" id="compression-mechanical-efficiency">-- %</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Operational Parameters -->
+                        <div class="operational-section">
+                            <h4>⚙️ Operational Parameters</h4>
+                            <div class="operational-grid">
+                                <div class="operational-item">
+                                    <span class="operational-label">Input H₂ Rate:</span>
+                                    <span class="operational-value" id="compression-input-rate">-- Nm³/hr</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Output H₂ Rate:</span>
+                                    <span class="operational-value" id="compression-output-rate">-- Nm³/hr</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Input Pressure:</span>
+                                    <span class="operational-value" id="compression-input-pressure">-- bar</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Output Pressure:</span>
+                                    <span class="operational-value" id="compression-output-pressure">-- bar</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Temperature:</span>
+                                    <span class="operational-value" id="compression-temperature">-- °C</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Compression Ratio:</span>
+                                    <span class="operational-value" id="compression-ratio">--</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Power Consumption:</span>
+                                    <span class="operational-value" id="compression-power-consumption">-- kW</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Engineering Metrics -->
+                        <div class="engineering-section">
+                            <h4>🔧 Engineering Details</h4>
+                            <div class="engineering-grid">
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Stage 1 Pressure:</span>
+                                    <span class="engineering-value" id="compression-stage1-pressure">-- bar</span>
+                                </div>
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Stage 2 Pressure:</span>
+                                    <span class="engineering-value" id="compression-stage2-pressure">-- bar</span>
+                                </div>
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Stage 1 Temperature:</span>
+                                    <span class="engineering-value" id="compression-stage1-temperature">-- °C</span>
+                                </div>
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Stage 2 Temperature:</span>
+                                    <span class="engineering-value" id="compression-stage2-temperature">-- °C</span>
+                                </div>
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Interstage Cooling:</span>
+                                    <span class="engineering-value" id="compression-interstage-cooling">--</span>
+                                </div>
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Lubrication Status:</span>
+                                    <span class="engineering-value" id="compression-lubrication">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Compression Level Control -->
+                        <div class="control-section">
+                            <h4>🎛️ Compression Control</h4>
+                            <div class="slider-control">
+                                <label for="compression-level">Compression Level: <span id="compression-level-display">85%</span></label>
+                                <input type="range" id="compression-level" min="0" max="1" step="0.01" value="0.85" class="control-slider">
+                                <div class="slider-labels">
+                                    <span>Basic (10:1)</span>
+                                    <span>Standard (14:1)</span>
+                                    <span>Maximum (20:1)</span>
+                                </div>
+                                <p class="control-hint">Higher compression = Higher pressure but lower efficiency</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Cumulative Metrics -->
+                        <div class="cumulative-section">
+                            <h4>📈 Cumulative Metrics</h4>
+                            <div class="cumulative-grid">
+                                <div class="cumulative-item">
+                                    <span class="cumulative-label">Operational Hours:</span>
+                                    <span class="cumulative-value" id="compression-operational-hours">-- hrs</span>
+                                </div>
+                                <div class="cumulative-item">
+                                    <span class="cumulative-label">Total H₂ Compressed:</span>
+                                    <span class="cumulative-value" id="compression-total-hydrogen">-- Nm³</span>
+                                </div>
+                                <div class="cumulative-item">
+                                    <span class="cumulative-label">Total Energy Consumed:</span>
+                                    <span class="cumulative-value" id="compression-total-energy">-- kWh</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance History Chart -->
+                        <div class="chart-section">
+                            <h4>📊 Performance Trend</h4>
+                            <div class="chart-container">
+                                <canvas id="compression-performance-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Active Alerts -->
+                        <div class="alerts-section">
+                            <h4>🚨 System Alerts</h4>
+                            <div id="compression-alerts-container" class="alerts-container">
+                                <div class="no-alerts">No active alerts</div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-controls">
+                            <button id="compression-start" class="btn btn-primary">Start Compression</button>
+                            <button id="compression-stop" class="btn btn-danger">Stop Compression</button>
+                            <button id="compression-emergency" class="btn btn-warning">Emergency Stop</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Tab -->
+                <div class="tab-content" id="storage-tab">
+                    <div class="system-status">
+                        <h3>Storage System</h3>
+                        <div class="status-item">
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="storageStatus">offline</span>
+                        </div>
+                        
+                        <!-- System Connectivity Monitoring -->
+                        <div class="connectivity-section">
+                            <h4>🔗 System Connectivity</h4>
+                            <div class="connectivity-grid">
+                                <div class="connectivity-item">
+                                    <span class="connectivity-label">Power System:</span>
+                                    <span class="connectivity-status" id="storage-power-connectivity">❌ Disconnected</span>
+                                </div>
+                                <div class="connectivity-item">
+                                    <span class="connectivity-label">Compression System:</span>
+                                    <span class="connectivity-status" id="storage-compression-connectivity">❌ Disconnected</span>
+                                </div>
+                                <div class="connectivity-item">
+                                    <span class="connectivity-label">Water System:</span>
+                                    <span class="connectivity-status" id="storage-water-connectivity">❌ Disconnected</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Metrics -->
+                        <div class="performance-section">
+                            <h4>📊 Performance Analysis</h4>
+                            <div class="performance-grid">
+                                <div class="performance-item">
+                                    <span class="performance-label">Performance Score:</span>
+                                    <span class="performance-value" id="storage-performance-score">--</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Overall Efficiency:</span>
+                                    <span class="performance-value" id="storage-overall-efficiency">-- %</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Storage Efficiency:</span>
+                                    <span class="performance-value" id="storage-storage-efficiency">-- %</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Temperature Efficiency:</span>
+                                    <span class="performance-value" id="storage-temperature-efficiency">-- %</span>
+                                </div>
+                                <div class="performance-item">
+                                    <span class="performance-label">Pressure Efficiency:</span>
+                                    <span class="performance-value" id="storage-pressure-efficiency">-- %</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Operational Parameters -->
+                        <div class="operational-section">
+                            <h4>⚙️ Operational Parameters</h4>
+                            <div class="operational-grid">
+                                <div class="operational-item">
+                                    <span class="operational-label">Input H₂ Rate:</span>
+                                    <span class="operational-value" id="storage-input-rate">-- Nm³/hr</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Net Storage Rate:</span>
+                                    <span class="operational-value" id="storage-net-rate">-- Nm³/hr</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Current Inventory:</span>
+                                    <span class="operational-value" id="storage-inventory">-- Nm³</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Fill Level:</span>
+                                    <span class="operational-value" id="storage-fill-level">-- %</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Temperature:</span>
+                                    <span class="operational-value" id="storage-temperature">-- °C</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Storage Pressure:</span>
+                                    <span class="operational-value" id="storage-pressure">-- bar</span>
+                                </div>
+                                <div class="operational-item">
+                                    <span class="operational-label">Power Consumption:</span>
+                                    <span class="operational-value" id="storage-power-consumption">-- kW</span>
+                                </div>
+
+                            </div>
+                        </div>
+                        
+
+                        
+                        <!-- Tank Status -->
+                        <div class="tank-section">
+                            <h4>🛢️ Tank Status</h4>
+                            <div class="tank-grid">
+                                <div class="tank-item">
+                                    <span class="tank-label">Active Tanks:</span>
+                                    <span class="tank-value" id="storage-active-tanks">--</span>
+                                </div>
+                                <div class="tank-item">
+                                    <span class="tank-label">Total Capacity:</span>
+                                    <span class="tank-value" id="storage-total-capacity">-- Nm³</span>
+                                </div>
+                                <div class="tank-item">
+                                    <span class="tank-label">Available Capacity:</span>
+                                    <span class="tank-value" id="storage-available-capacity">-- Nm³</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Engineering Status -->
+                        <div class="engineering-section">
+                            <h4>🔧 System Status</h4>
+                            <div class="engineering-grid">
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Cooling System:</span>
+                                    <span class="engineering-value" id="storage-cooling-status">--</span>
+                                </div>
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Safety System:</span>
+                                    <span class="engineering-value" id="storage-safety-status">--</span>
+                                </div>
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Leak Detection:</span>
+                                    <span class="engineering-value" id="storage-leak-status">--</span>
+                                </div>
+                                <div class="engineering-item">
+                                    <span class="engineering-label">Ventilation:</span>
+                                    <span class="engineering-value" id="storage-ventilation-status">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cumulative Metrics -->
+                        <div class="cumulative-section">
+                            <h4>📈 Cumulative Metrics</h4>
+                            <div class="cumulative-grid">
+                                <div class="cumulative-item">
+                                    <span class="cumulative-label">Operational Hours:</span>
+                                    <span class="cumulative-value" id="storage-operational-hours">-- hrs</span>
+                                </div>
+                                <div class="cumulative-item">
+                                    <span class="cumulative-label">Total H₂ Stored:</span>
+                                    <span class="cumulative-value" id="storage-total-hydrogen">-- Nm³</span>
+                                </div>
+                                <div class="cumulative-item">
+                                    <span class="cumulative-label">Total Energy Consumed:</span>
+                                    <span class="cumulative-value" id="storage-total-energy">-- kWh</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance History Chart -->
+                        <div class="chart-section">
+                            <h4>📊 Performance Trend</h4>
+                            <div class="chart-container">
+                                <canvas id="storage-performance-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Active Alerts -->
+                        <div class="alerts-section">
+                            <h4>🚨 System Alerts</h4>
+                            <div id="storage-alerts-container" class="alerts-container">
+                                <div class="no-alerts">No active alerts</div>
+                            </div>
+                        </div>
+                        
+                        <div class="system-controls">
+                            <button id="storage-start" class="btn btn-primary">Start Storage</button>
+                            <button id="storage-stop" class="btn btn-danger">Stop Storage</button>
+                            <button id="storage-emergency" class="btn btn-warning">Emergency Stop</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Power Tab -->
+                <div class="tab-content" id="power-tab">
+                    <div class="system-status">
+                        <h3>Power System</h3>
+                        <div class="status-item">
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="powerStatus">offline</span>
+                        </div>
+                        <div class="system-controls">
+                            <button id="power-start" class="btn btn-primary">Start Power</button>
+                            <button id="power-stop" class="btn btn-danger">Stop Power</button>
+                            <div class="inline-field">
+                                <label for="power-units">Units Running</label>
+                                <input id="power-units" type="number" min="0" step="1" value="0" />
+                                <span class="hint">/ <span id="power-units-available">4</span> available</span>
+                            </div>
+                            <div class="inline-field">
+                                <span class="status-label">Total Power:</span>
+                                <span class="status-value" id="power-total-kw">0 kW</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other tabs will be populated dynamically -->
+            </div>
+        </main>
+
+        <!-- Alert System -->
+        <div id="alert-container" class="alert-container"></div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Factory Settings</h2>
+                    <button class="modal-close" id="settings-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-group">
+                        <h3>Simulation Speed</h3>
+                        <label for="sim-speed" class="sr-only">Simulation speed</label>
+                        <input type="range" id="sim-speed" min="0.1" max="10" step="0.1" value="1" aria-label="Simulation speed">
+                        <span id="sim-speed-value">1x</span>
+                    </div>
+                    <div class="setting-group">
+                        <h3>Difficulty Level</h3>
+                        <label for="difficulty-level" class="sr-only">Difficulty level</label>
+                        <select id="difficulty-level" aria-label="Difficulty level">
+                            <option value="trainee">Trainee</option>
+                            <option value="operator" selected>Operator</option>
+                            <option value="expert">Expert</option>
+                            <option value="master">Master</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <h3>Failure Rate</h3>
+                        <label for="failure-rate" class="sr-only">Failure rate</label>
+                        <input type="range" id="failure-rate" min="0" max="200" step="10" value="100" aria-label="Failure rate">
+                        <span id="failure-rate-value">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Load all JavaScript files in order -->
+    <script>
+        console.log('🚀 Starting to load JavaScript files...');
+        
+        // Test basic JavaScript functionality
+        console.log('✅ Basic JavaScript working');
+        
+        // Test if we can create objects
+        try {
+            const testObj = { test: 'value' };
+            console.log('✅ Object creation working:', testObj);
+        } catch (error) {
+            console.error('❌ Object creation failed:', error);
+        }
+    </script>
+    
+    <!-- Essential files only for Vercel deployment -->
+    <script src="js/test.js" onload="console.log('✅ test.js loaded')" onerror="console.error('❌ test.js failed to load')"></script>
+    
+    <!-- Working UI Manager for all interactions -->
+    <script src="js/ui/working-ui-manager.js" onload="console.log('✅ working-ui-manager.js loaded')" onerror="console.error('❌ working-ui-manager.js failed to load')"></script>
+    <script src="js/ui/alert-manager.js" onload="console.log('✅ alert-manager.js loaded')" onerror="console.error('❌ alert-manager.js failed to load')"></script>
+    <script src="js/ui/chart-manager.js" onload="console.log('✅ chart-manager.js loaded')" onerror="console.error('❌ chart-manager.js failed to load')"></script>
+    
+    <!-- 2D Animation and Simulation Files -->
+    <script src="js/animation/factory-2d.js" onload="console.log('✅ factory-2d.js loaded')" onerror="console.error('❌ factory-2d.js failed to load')"></script>
+    <script src="js/simulation/systems/water-system.js" onload="console.log('✅ water-system.js loaded')" onerror="console.error('❌ water-system.js failed to load')"></script>
+    <script src="js/simulation/systems/electrolysis-system.js" onload="console.log('✅ electrolysis-system.js loaded')" onerror="console.error('❌ electrolysis-system.js failed to load')"></script>
+    <script src="js/simulation/systems/purification-system.js" onload="console.log('✅ purification-system.js loaded')" onerror="console.error('❌ purification-system.js failed to load')"></script>
+    <script src="js/simulation/systems/compression-system.js" onload="console.log('✅ compression-system.js loaded')" onerror="console.error('❌ compression-system.js failed to load')"></script>
+    <script src="js/simulation/systems/storage-system.js" onload="console.log('✅ storage-system.js loaded')" onerror="console.error('❌ storage-system.js failed to load')"></script>
+    <script src="js/simulation/systems/power-system.js" onload="console.log('✅ power-system.js loaded')" onerror="console.error('❌ power-system.js failed to load')"></script>
+    <script src="js/simulation/systems/safety-system.js" onload="console.log('✅ safety-system.js loaded')" onerror="console.error('❌ safety-system.js failed to load')"></script>
+    <script src="js/simulation/factory-simulation.js" onload="console.log('✅ factory-simulation.js loaded')" onerror="console.error('❌ factory-simulation.js failed to load')"></script>
+    
+    <!-- System Connector - Links all systems together -->
+    <script src="js/system-connector.js" onload="console.log('✅ system-connector.js loaded')" onerror="console.error('❌ system-connector.js failed to load')"></script>
+    
+    <!-- Simplified initialization for Vercel -->
+    <script>
+        console.log('📜 All scripts loaded, initializing for Vercel...');
+        
+        // Single initialization system for Vercel
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎯 DOM ready, starting Vercel initialization...');
+            
+            // Wait for essential classes to be available
+            const waitForClasses = () => {
+                const requiredClasses = ['TestClass', 'WorkingUIManager', 'AlertManager', 'ChartManager', 'Factory2DAnimation', 'FactorySimulation'];
+                const missingClasses = requiredClasses.filter(className => typeof window[className] === 'undefined');
+                
+                if (missingClasses.length > 0) {
+                    console.log('⏳ Waiting for classes:', missingClasses);
+                    setTimeout(waitForClasses, 100);
+                    return;
+                }
+                
+                console.log('✅ All required classes available, initializing...');
+                
+                // Initialize only the working UI manager
+                try {
+                    window.vercelApp = new WorkingUIManager();
+                    window.vercelApp.init();
+                    
+                    // Hide loading screen after successful initialization
+                    setTimeout(() => {
+                        const loadingScreen = document.getElementById('loading-screen');
+                        const app = document.getElementById('app');
+                        
+                        if (loadingScreen) {
+                            loadingScreen.style.opacity = '0';
+                            setTimeout(() => {
+                                loadingScreen.style.display = 'none';
+                            }, 500);
+                        }
+                        
+                        if (app) {
+                            app.classList.remove('hidden');
+                            app.style.opacity = '0';
+                            app.style.display = 'block';
+                            setTimeout(() => {
+                                app.style.opacity = '1';
+                            }, 100);
+                        }
+                        
+                        console.log('🎉 Vercel deployment ready!');
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('❌ Initialization failed:', error);
+                    
+                    // Show error and hide loading screen anyway
+                    const loadingText = document.querySelector('.loading-text');
+                    if (loadingText) {
+                        loadingText.textContent = 'Ready (some features may be limited)';
+                        loadingText.style.color = '#ffaa00';
+                    }
+                    
+                    setTimeout(() => {
+                        const loadingScreen = document.getElementById('loading-screen');
+                        const app = document.getElementById('app');
+                        
+                        if (loadingScreen) {
+                            loadingScreen.style.opacity = '0';
+                            setTimeout(() => {
+                                loadingScreen.style.display = 'none';
+                            }, 500);
+                        }
+                        
+                        if (app) {
+                            app.classList.remove('hidden');
+                            app.style.opacity = '0';
+                            app.style.display = 'block';
+                            setTimeout(() => {
+                                app.style.opacity = '1';
+                            }, 100);
+                        }
+                    }, 2000);
+                }
+            };
+            
+            // Start waiting for classes
+            waitForClasses();
+        });
+        
+        // Fallback initialization - ensure app is always shown
+        setTimeout(() => {
+            const loadingScreen = document.getElementById('loading-screen');
+            const app = document.getElementById('app');
+            
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                console.log('⚠️ Fallback: Force hiding loading screen');
+                loadingScreen.style.display = 'none';
+            }
+            
+            if (app && app.classList.contains('hidden')) {
+                console.log('⚠️ Fallback: Force showing app');
+                app.classList.remove('hidden');
+                app.style.display = 'block';
+                app.style.opacity = '1';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

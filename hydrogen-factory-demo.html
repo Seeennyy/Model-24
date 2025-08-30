@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏭 Hydrogen Factory - Working Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .status {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        #viewport {
+            width: 100%;
+            height: 500px;
+            border: 3px solid #4a90e2;
+            border-radius: 15px;
+            background: #000;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .control-group {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .control-group h3 {
+            margin-bottom: 15px;
+            color: #4a90e2;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.5);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .slider-control {
+            margin: 15px 0;
+        }
+        
+        .slider-control label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .slider-control input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4a90e2;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(74, 144, 226, 0.5);
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .metric-card h4 {
+            color: #b0c4de;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #00d4aa;
+            text-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+        }
+        
+        .running { animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .highlight {
+            border: 3px solid #00d4aa !important;
+            box-shadow: 0 0 20px rgba(0, 212, 170, 0.5) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏭 Hydrogen Factory Interactive Demo</h1>
+        <div class="status">
+            <span id="system-status">System Ready</span> | 
+            <span id="animation-status">Animation Stopped</span> | 
+            <span>Time: <span id="time-display">0.0s</span></span>
+        </div>
+    </div>
+    
+    <div id="viewport"></div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <h3>🏭 Factory Control</h3>
+            <button onclick="toggleFactory()" id="main-btn">Start Factory</button>
+            <button onclick="emergencyStop()">Emergency Stop</button>
+        </div>
+        
+        <div class="control-group">
+            <h3>⚡ Electrolysis Control</h3>
+            <div class="slider-control">
+                <label>Temperature: <span id="temp-display">70°C</span></label>
+                <input type="range" id="temperature" min="60" max="80" value="70" oninput="updateTemperature(this.value)">
+                <small>Optimal: 70°C | Current efficiency impact: <span id="temp-efficiency">100%</span></small>
+            </div>
+            
+            <div class="slider-control">
+                <label>Voltage: <span id="voltage-display">900V</span></label>
+                <input type="range" id="voltage" min="800" max="1000" step="10" value="900" oninput="updateVoltage(this.value)">
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>💧 Water Treatment</h3>
+            <div class="slider-control">
+                <label>Treatment Level: <span id="treatment-display">50%</span></label>
+                <input type="range" id="treatment" min="0" max="100" value="50" oninput="updateTreatment(this.value)">
+                <small>Flow impact: <span id="flow-impact">-15%</span></small>
+            </div>
+            
+            <button onclick="focusSystem('water')">Focus Water System</button>
+        </div>
+        
+        <div class="control-group">
+            <h3>🎯 System Focus</h3>
+            <button onclick="focusSystem('electrolysis')">Electrolysis</button>
+            <button onclick="focusSystem('purification')">Purification</button>
+            <button onclick="focusSystem('compression')">Compression</button>
+        </div>
+    </div>
+    
+    <div class="metrics">
+        <div class="metric-card">
+            <h4>H₂ Production Rate</h4>
+            <div class="metric-value" id="production">0.0 Nm³/hr</div>
+        </div>
+        <div class="metric-card">
+            <h4>System Efficiency</h4>
+            <div class="metric-value" id="efficiency">0%</div>
+        </div>
+        <div class="metric-card">
+            <h4>Power Consumption</h4>
+            <div class="metric-value" id="power">0 kW</div>
+        </div>
+        <div class="metric-card">
+            <h4>Water Quality</h4>
+            <div class="metric-value" id="quality">0.0 MΩ·cm</div>
+        </div>
+        <div class="metric-card">
+            <h4>Temperature</h4>
+            <div class="metric-value" id="temp-metric">70°C</div>
+        </div>
+        <div class="metric-card">
+            <h4>Active Particles</h4>
+            <div class="metric-value" id="particles">0</div>
+        </div>
+    </div>
+
+    <script>
+        class HydrogenFactoryAnimation {
+            constructor() {
+                this.canvas = null;
+                this.ctx = null;
+                this.isRunning = false;
+                this.time = 0;
+                this.particles = [];
+                this.bubbles = [];
+                this.focusedSystem = null;
+                
+                // System parameters
+                this.temperature = 70;
+                this.voltage = 900;
+                this.treatmentLevel = 0.5;
+                
+                // Calculated metrics
+                this.production = 0;
+                this.efficiency = 0;
+                this.power = 0;
+                this.quality = 0;
+                
+                this.colors = {
+                    hydrogen: '#4a90e2',
+                    oxygen: '#ff6b6b',
+                    water: '#74b9ff',
+                    electric: '#f1c40f',
+                    heat: '#e74c3c'
+                };
+            }
+            
+            init() {
+                const viewport = document.getElementById('viewport');
+                this.canvas = document.createElement('canvas');
+                this.canvas.width = viewport.clientWidth;
+                this.canvas.height = viewport.clientHeight;
+                viewport.appendChild(this.canvas);
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Handle resize
+                window.addEventListener('resize', () => {
+                    this.canvas.width = viewport.clientWidth;
+                    this.canvas.height = viewport.clientHeight;
+                });
+                
+                console.log('✅ Animation initialized');
+                return true;
+            }
+            
+            start() {
+                this.isRunning = true;
+                document.getElementById('animation-status').textContent = 'Animation Running';
+                document.getElementById('animation-status').className = 'running';
+                this.animate();
+                console.log('🎬 Animation started');
+            }
+            
+            stop() {
+                this.isRunning = false;
+                document.getElementById('animation-status').textContent = 'Animation Stopped';
+                document.getElementById('animation-status').className = '';
+                console.log('⏹️ Animation stopped');
+            }
+            
+            animate() {
+                if (!this.isRunning) return;
+                
+                this.time += 0.016;
+                this.update();
+                this.render();
+                this.updateUI();
+                
+                requestAnimationFrame(() => this.animate());
+            }
+            
+            update() {
+                // Calculate metrics based on parameters
+                const tempOptimal = 1 - Math.abs(this.temperature - 70) / 20;
+                const voltageOptimal = 1 - Math.abs(this.voltage - 900) / 200;
+                
+                this.production = 150 * tempOptimal * (0.7 + this.treatmentLevel * 0.3);
+                this.efficiency = 75 * tempOptimal * voltageOptimal * (0.8 + this.treatmentLevel * 0.2);
+                this.power = 300 + (this.voltage - 900) * 0.5 + (this.temperature - 70) * 3;
+                this.quality = 8 + this.treatmentLevel * 10;
+                
+                // Update particles
+                this.particles = this.particles.filter(p => {
+                    p.life--;
+                    p.x += p.vx || 0;
+                    p.y += p.vy || -1;
+                    p.vy = (p.vy || -1) + 0.01; // Gravity
+                    return p.life > 0;
+                });
+                
+                // Update bubbles
+                this.bubbles = this.bubbles.filter(b => {
+                    b.life--;
+                    b.x += (Math.random() - 0.5) * 0.5;
+                    b.y -= b.type === 'hydrogen' ? 2 : 1.5;
+                    return b.life > 0;
+                });
+                
+                // Generate new particles based on activity
+                if (Math.random() < this.production * 0.001) {
+                    this.bubbles.push({
+                        x: 200 + Math.random() * 200,
+                        y: 350,
+                        type: Math.random() < 0.67 ? 'hydrogen' : 'oxygen',
+                        size: 1 + Math.random() * 2,
+                        life: 100
+                    });
+                }
+                
+                // Heat particles if temperature is high
+                if (this.temperature > 75 && Math.random() < 0.05) {
+                    this.particles.push({
+                        x: 200 + Math.random() * 200,
+                        y: 300,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: -2,
+                        color: this.colors.heat,
+                        size: 1,
+                        life: 40
+                    });
+                }
+                
+                // Electric sparks
+                if (Math.random() < this.voltage * 0.0001) {
+                    this.particles.push({
+                        x: 150 + Math.random() * 300,
+                        y: 320 + Math.random() * 60,
+                        vx: (Math.random() - 0.5) * 3,
+                        vy: (Math.random() - 0.5) * 3,
+                        color: this.colors.electric,
+                        size: 1.5,
+                        life: 20
+                    });
+                }
+            }
+            
+            render() {
+                // Clear canvas
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw factory layout
+                this.drawElectrolysisSystem();
+                this.drawWaterSystem();
+                this.drawPurificationSystem();
+                this.drawConnections();
+                
+                // Draw particles and bubbles
+                this.drawParticles();
+                this.drawBubbles();
+                
+                // Draw system info
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '16px Arial';
+                this.ctx.fillText(`🏭 Hydrogen Factory - Time: ${this.time.toFixed(1)}s`, 20, 30);
+                
+                if (this.focusedSystem) {
+                    this.ctx.fillStyle = '#00d4aa';
+                    this.ctx.fillText(`🎯 Focus: ${this.focusedSystem.toUpperCase()}`, 20, 50);
+                }
+            }
+            
+            drawElectrolysisSystem() {
+                const x = 150, y = 300;
+                const highlight = this.focusedSystem === 'electrolysis';
+                
+                // Main stack
+                this.ctx.fillStyle = highlight ? '#4a90e2' : '#2980b9';
+                this.ctx.fillRect(x, y, 300, 80);
+                this.ctx.strokeStyle = highlight ? '#00d4aa' : '#fff';
+                this.ctx.lineWidth = highlight ? 3 : 1;
+                this.ctx.strokeRect(x, y, 300, 80);
+                
+                // Individual cells
+                for (let i = 0; i < 12; i++) {
+                    const cellX = x + 10 + (i % 6) * 45;
+                    const cellY = y + 10 + Math.floor(i / 6) * 30;
+                    
+                    // Cell body
+                    this.ctx.fillStyle = '#34495e';
+                    this.ctx.fillRect(cellX, cellY, 40, 25);
+                    
+                    // Electrodes
+                    this.ctx.fillStyle = '#e74c3c';
+                    this.ctx.globalAlpha = 0.7;
+                    this.ctx.fillRect(cellX + 2, cellY + 5, 6, 15);
+                    this.ctx.fillStyle = '#3498db';
+                    this.ctx.fillRect(cellX + 32, cellY + 5, 6, 15);
+                    this.ctx.globalAlpha = 1;
+                    
+                    // Electric activity
+                    if (Math.random() < this.voltage * 0.0001) {
+                        this.ctx.strokeStyle = this.colors.electric;
+                        this.ctx.lineWidth = 2;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(cellX + 8, cellY + 12);
+                        this.ctx.lineTo(cellX + 32, cellY + 12);
+                        this.ctx.stroke();
+                    }
+                }
+                
+                // Label
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '14px Arial';
+                this.ctx.fillText('⚡ Electrolysis Stack', x, y - 10);
+                this.ctx.font = '11px Arial';
+                this.ctx.fillText(`${this.temperature}°C | ${this.voltage}V`, x, y + 100);
+            }
+            
+            drawWaterSystem() {
+                const x = 50, y = 150;
+                const highlight = this.focusedSystem === 'water';
+                
+                // Water tank
+                this.ctx.fillStyle = highlight ? this.colors.water : '#74b9ff';
+                this.ctx.fillRect(x, y, 80, 100);
+                this.ctx.strokeStyle = highlight ? '#00d4aa' : '#fff';
+                this.ctx.lineWidth = highlight ? 3 : 1;
+                this.ctx.strokeRect(x, y, 80, 100);
+                
+                // Water animation
+                this.ctx.fillStyle = 'rgba(116, 185, 255, 0.7)';
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y + 20);
+                for (let i = 0; i <= 80; i += 10) {
+                    const wave = Math.sin(this.time * 3 + i * 0.1) * 3;
+                    this.ctx.lineTo(x + i, y + 20 + wave);
+                }
+                this.ctx.lineTo(x + 80, y + 100);
+                this.ctx.lineTo(x, y + 100);
+                this.ctx.fill();
+                
+                // Treatment filters
+                for (let i = 0; i < 3; i++) {
+                    const filterX = x + 100 + i * 35;
+                    const active = this.treatmentLevel > i * 0.33;
+                    
+                    this.ctx.fillStyle = active ? '#2ecc71' : '#7f8c8d';
+                    this.ctx.fillRect(filterX, y + 30, 30, 50);
+                    this.ctx.strokeRect(filterX, y + 30, 30, 50);
+                    
+                    if (active) {
+                        const intensity = Math.min(1, (this.treatmentLevel - i * 0.33) * 3);
+                        this.ctx.fillStyle = `rgba(46, 204, 113, ${intensity})`;
+                        this.ctx.fillRect(filterX + 5, y + 35, 20, 40);
+                    }
+                }
+                
+                // Label
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '14px Arial';
+                this.ctx.fillText('💧 Water Treatment', x, y - 10);
+                this.ctx.font = '11px Arial';
+                this.ctx.fillText(`Treatment: ${(this.treatmentLevel * 100).toFixed(0)}%`, x, y + 120);
+            }
+            
+            drawPurificationSystem() {
+                const x = 500, y = 200;
+                const highlight = this.focusedSystem === 'purification';
+                
+                // Purification vessels
+                for (let i = 0; i < 3; i++) {
+                    const vesselX = x + i * 60;
+                    
+                    this.ctx.fillStyle = highlight ? '#a29bfe' : '#6c5ce7';
+                    this.ctx.fillRect(vesselX, y, 50, 100);
+                    this.ctx.strokeStyle = highlight ? '#00d4aa' : '#fff';
+                    this.ctx.lineWidth = highlight ? 3 : 1;
+                    this.ctx.strokeRect(vesselX, y, 50, 100);
+                    
+                    // Purification activity
+                    if (Math.random() < 0.02) {
+                        this.particles.push({
+                            x: vesselX + 25,
+                            y: y + 50,
+                            vx: (Math.random() - 0.5),
+                            vy: 0.5,
+                            color: '#fff',
+                            size: 1,
+                            life: 50
+                        });
+                    }
+                }
+                
+                // Label
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '14px Arial';
+                this.ctx.fillText('🔬 Purification', x, y - 10);
+            }
+            
+            drawConnections() {
+                // Water to electrolysis
+                this.ctx.strokeStyle = this.colors.water;
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                this.ctx.moveTo(235, 200);
+                this.ctx.lineTo(300, 200);
+                this.ctx.lineTo(300, 300);
+                this.ctx.stroke();
+                
+                // Electrolysis to purification
+                this.ctx.strokeStyle = this.colors.hydrogen;
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                this.ctx.moveTo(450, 340);
+                this.ctx.lineTo(500, 340);
+                this.ctx.lineTo(500, 300);
+                this.ctx.stroke();
+            }
+            
+            drawParticles() {
+                this.particles.forEach(p => {
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.globalAlpha = p.life / 50;
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                });
+            }
+            
+            drawBubbles() {
+                this.bubbles.forEach(b => {
+                    const color = b.type === 'hydrogen' ? this.colors.hydrogen : this.colors.oxygen;
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = b.life / 100;
+                    this.ctx.beginPath();
+                    this.ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                });
+            }
+            
+            updateUI() {
+                document.getElementById('time-display').textContent = this.time.toFixed(1) + 's';
+                document.getElementById('production').textContent = this.production.toFixed(1) + ' Nm³/hr';
+                document.getElementById('efficiency').textContent = this.efficiency.toFixed(1) + '%';
+                document.getElementById('power').textContent = this.power.toFixed(0) + ' kW';
+                document.getElementById('quality').textContent = this.quality.toFixed(1) + ' MΩ·cm';
+                document.getElementById('temp-metric').textContent = this.temperature + '°C';
+                document.getElementById('particles').textContent = (this.particles.length + this.bubbles.length);
+            }
+            
+            setTemperature(temp) {
+                this.temperature = temp;
+                const efficiency = 100 - Math.abs(temp - 70) * 2;
+                document.getElementById('temp-efficiency').textContent = Math.max(60, efficiency).toFixed(0) + '%';
+            }
+            
+            setVoltage(voltage) {
+                this.voltage = voltage;
+            }
+            
+            setTreatmentLevel(level) {
+                this.treatmentLevel = level / 100;
+                const flowImpact = -(level * 0.3).toFixed(0);
+                document.getElementById('flow-impact').textContent = flowImpact + '%';
+            }
+            
+            focusSystem(system) {
+                this.focusedSystem = system;
+                console.log(`🎯 Focusing on ${system}`);
+                
+                // Visual feedback
+                setTimeout(() => {
+                    this.focusedSystem = null;
+                }, 3000);
+            }
+        }
+        
+        // Global variables
+        let animation = null;
+        let isFactoryRunning = false;
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            animation = new HydrogenFactoryAnimation();
+            if (animation.init()) {
+                console.log('✅ Hydrogen Factory Demo Ready!');
+                document.getElementById('system-status').textContent = 'System Ready - Click Start!';
+            }
+        });
+        
+        // Control functions
+        function toggleFactory() {
+            if (!isFactoryRunning) {
+                startFactory();
+            } else {
+                stopFactory();
+            }
+        }
+        
+        function startFactory() {
+            isFactoryRunning = true;
+            animation.start();
+            document.getElementById('main-btn').textContent = 'Stop Factory';
+            document.getElementById('system-status').textContent = 'Factory Running';
+            document.getElementById('system-status').className = 'running';
+            console.log('🏭 Factory started!');
+        }
+        
+        function stopFactory() {
+            isFactoryRunning = false;
+            animation.stop();
+            document.getElementById('main-btn').textContent = 'Start Factory';
+            document.getElementById('system-status').textContent = 'Factory Stopped';
+            document.getElementById('system-status').className = '';
+            console.log('⏹️ Factory stopped!');
+        }
+        
+        function emergencyStop() {
+            stopFactory();
+            document.getElementById('system-status').textContent = '🚨 EMERGENCY STOP';
+            document.getElementById('system-status').style.color = '#e74c3c';
+            setTimeout(() => {
+                document.getElementById('system-status').style.color = '';
+            }, 3000);
+        }
+        
+        function updateTemperature(value) {
+            document.getElementById('temp-display').textContent = value + '°C';
+            animation.setTemperature(parseInt(value));
+            console.log(`🌡️ Temperature: ${value}°C`);
+        }
+        
+        function updateVoltage(value) {
+            document.getElementById('voltage-display').textContent = value + 'V';
+            animation.setVoltage(parseInt(value));
+            console.log(`⚡ Voltage: ${value}V`);
+        }
+        
+        function updateTreatment(value) {
+            document.getElementById('treatment-display').textContent = value + '%';
+            animation.setTreatmentLevel(parseInt(value));
+            console.log(`💧 Treatment: ${value}%`);
+        }
+        
+        function focusSystem(system) {
+            animation.focusSystem(system);
+            
+            // Visual feedback on button
+            event.target.style.background = 'linear-gradient(45deg, #00d4aa, #00b894)';
+            setTimeout(() => {
+                event.target.style.background = '';
+            }, 2000);
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ': // Spacebar
+                    e.preventDefault();
+                    toggleFactory();
+                    break;
+                case 'e':
+                    focusSystem('electrolysis');
+                    break;
+                case 'w':
+                    focusSystem('water');
+                    break;
+                case 'p':
+                    focusSystem('purification');
+                    break;
+            }
+        });
+        
+        console.log('🚀 Hydrogen Factory Demo Loaded!');
+        console.log('💡 Keyboard shortcuts: Spacebar=Start/Stop, E=Electrolysis, W=Water, P=Purification');
+    </script>
+</body>
+</html>
+
